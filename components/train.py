@@ -8,9 +8,11 @@ import datetime
 from cassandra.cluster import Cluster
 from cassandra.auth import PlainTextAuthProvider
 from cassandra.query import BoundStatement
+import mlflow
+import mlflow.sklearn
 
 # Cassandra connection details
-cassandra_host = 'cassandra'  
+cassandra_host = 'localhost'
 cassandra_port = 9042
 cassandra_username = 'cassandra'
 cassandra_password = 'cassandra'
@@ -21,7 +23,7 @@ table = 'models'
 print("Training model...")
 
 # Load the data from the mounted directory inside the container 
-df = pd.read_csv('/opt/airflow/components//house_prices.csv')
+df = pd.read_csv('/Users/nguyennam/Desktop/MLOpsl1/components/house_prices.csv')
 
 # Prepare the data
 X = df[['feature1', 'feature2']]  # Replace with your actual feature names
@@ -43,21 +45,34 @@ model_name = 'house_price_prediction'
 model_version = '1.0'
 created_at = datetime.datetime.now()
 
-# Cassandra connection setup
-auth_provider = PlainTextAuthProvider(username=cassandra_username, password=cassandra_password)
-cluster = Cluster([cassandra_host], port=cassandra_port, auth_provider=auth_provider)
-session = cluster.connect(keyspace)
+# Set up MLflow
+mlflow.set_experiment("House Price Prediction Experiment")
 
-# Prepare the query with placeholders
-insert_query = f"""
-INSERT INTO {table} (model_id, model_name, model_version, model_file, created_at)
-VALUES (?, ?, ?, ?, ?)
-"""
+# Log the model with MLflow
+with mlflow.start_run() as run:
+    mlflow.log_param("model_name", model_name)
+    mlflow.log_param("model_version", model_version)
+    mlflow.log_param("created_at", created_at)
+    mlflow.sklearn.log_model(model, "model")
 
-# Prepare and execute the query with the model data
-prepared = session.prepare(insert_query)
-bound_statement = prepared.bind((model_id, model_name, model_version, model_data, created_at))
-session.execute(bound_statement)
+    # Get the model URI
+    model_uri = mlflow.get_artifact_uri("model")
+    # Train the model
 
 
-print(f"Model {model_name} (ID: {model_id}) saved successfully in Cassandra.")
+    # Save model metadata to Cassandra
+    auth_provider = PlainTextAuthProvider(username=cassandra_username, password=cassandra_password)
+    cluster = Cluster([cassandra_host], port=cassandra_port, auth_provider=auth_provider)
+    session = cluster.connect(keyspace)
+
+    # Prepare the query with placeholders
+    insert_query = f"""
+    INSERT INTO {table} (model_id, model_name, model_version, model_file, created_at)
+    VALUES (?, ?, ?, ?, ?)
+    """
+    # Prepare and execute the query with the model data
+    prepared = session.prepare(insert_query)
+    bound_statement = prepared.bind((model_id, model_name, model_version, model_data, created_at))
+    session.execute(bound_statement)
+
+print(f"Model {model_name} (ID: {model_id}) saved successfully in Cassandra and MLflow.")
