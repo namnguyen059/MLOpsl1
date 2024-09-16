@@ -12,7 +12,7 @@ import mlflow
 import mlflow.sklearn
 
 # Cassandra connection details
-cassandra_host = 'localhost'
+cassandra_host = 'cassandra'
 cassandra_port = 9042
 cassandra_username = 'cassandra'
 cassandra_password = 'cassandra'
@@ -23,7 +23,7 @@ table = 'models'
 print("Training model...")
 
 # Load the data from the mounted directory inside the container 
-df = pd.read_csv('/Users/nguyennam/Desktop/MLOpsl1/components/house_prices.csv')
+df = pd.read_csv('/opt/airflow/components/house_prices.csv')
 
 # Prepare the data
 X = df[['feature1', 'feature2']]  # Replace with your actual feature names

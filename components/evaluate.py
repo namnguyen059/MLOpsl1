@@ -7,7 +7,7 @@ from cassandra.cluster import Cluster
 from cassandra.auth import PlainTextAuthProvider
 
 # Cassandra connection details
-cassandra_host = 'localhost'
+cassandra_host = 'cassandra'
 cassandra_port = 9042
 cassandra_username = 'cassandra'
 cassandra_password = 'cassandra'
@@ -16,7 +16,7 @@ table = 'models'
 model_name = 'house_price_prediction'
 
 # Load your test data
-test_df = pd.read_csv('/Users/nguyennam/Desktop/MLOpsl1/components/house_prices.csv')
+test_df = pd.read_csv('/opt/airflow/components/house_prices.csv')
 X_test = test_df[['feature1', 'feature2']]
 y_test = test_df['price']
 
@@ -52,7 +52,7 @@ for row in rows:
         with mlflow.start_run():
             # Log model version info (if needed)
             mlflow.log_param("model_version", model_row.created_at)
-    
+
             # Predict and evaluate
             predictions = model.predict(X_test)
             mse = mean_squared_error(y_test, predictions)
